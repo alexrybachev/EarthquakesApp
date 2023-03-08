@@ -8,16 +8,16 @@
 import Foundation
 
 actor QuakeClient {
-    
     private let quakeCache: NSCache<NSString, CacheEntryObject> = NSCache()
+    
+    /// Geological data provided by the U.S. Geological Survey (USGS). See ACKNOWLEDGMENTS.txt for additional details.
+    private let feedURL = URL(string: "https://earthquake.usgs.gov/earthquakes/feed/v1.0/summary/all_day.geojson")!
     
     private lazy var decoder: JSONDecoder = {
         let aDecoder = JSONDecoder()
         aDecoder.dateDecodingStrategy = .millisecondsSince1970
         return aDecoder
     }()
-    
-    private let feedURL = URL(string: "https://earthquake.usgs.gov/earthquakes/feed/v1.0/summary/all_day.geojson")!
     
     private let downloader: any HTTPDataDownloader
     
@@ -26,7 +26,6 @@ actor QuakeClient {
             let data = try await downloader.httpData(from: feedURL)
             let allQuakes = try decoder.decode(GeoJSON.self, from: data)
             var updatedQuakes = allQuakes.quakes
-            
             if let olderThanOneHour = updatedQuakes.firstIndex(where: {  $0.time.timeIntervalSinceNow > 3600 }) {
                 let indexRange = updatedQuakes.startIndex..<olderThanOneHour
                 try await withThrowingTaskGroup(of: (Int, QuakeLocation).self) { group in
@@ -46,7 +45,6 @@ actor QuakeClient {
                     }
                 }
             }
-            
             return updatedQuakes
         }
     }
@@ -71,8 +69,13 @@ actor QuakeClient {
             return location
         }
         quakeCache[url] = .inProgress(task)
-        let location = try await task.value
-        quakeCache[url] = .ready(location)
-        return location
+        do {
+            let location = try await task.value
+            quakeCache[url] = .ready(location)
+            return location
+        } catch {
+            quakeCache[url] = nil
+            throw error
+        }
     }
 }
