@@ -25,8 +25,11 @@ enum SelectMode {
 }
 
 struct SelectButton: View {
+    
     @Binding var mode: SelectMode
+    
     var action: () -> Void = {}
+    
     var body: some View {
         Button {
             withAnimation {

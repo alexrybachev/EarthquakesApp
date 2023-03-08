@@ -8,8 +8,10 @@
 import Foundation
 
 struct QuakeLocation: Decodable {
+    
     var latitude: Double { properties.products.origin.first!.properties.latitude }
     var longitude: Double { properties.products.origin.first!.properties.longitude }
+    
     private var properties: RootProperties
     
     struct RootProperties: Decodable {
@@ -31,6 +33,7 @@ struct QuakeLocation: Decodable {
 }
 
 extension QuakeLocation.OriginProperties: Decodable {
+    
     private enum OriginPropertiesCodingKeys: String, CodingKey {
         case latitude
         case longitude
@@ -40,9 +43,8 @@ extension QuakeLocation.OriginProperties: Decodable {
         let container = try decoder.container(keyedBy: OriginPropertiesCodingKeys.self)
         let longitude = try container.decode(String.self, forKey: .longitude)
         let latitude = try container.decode(String.self, forKey: .latitude)
-        
-        guard let longitude = Double(longitude), let latitude = Double(latitude) else { throw QuakeError.missingData }
-        
+        guard let longitude = Double(longitude),
+              let latitude = Double(latitude) else { throw QuakeError.missingData }
         self.longitude = longitude
         self.latitude = latitude
     }
